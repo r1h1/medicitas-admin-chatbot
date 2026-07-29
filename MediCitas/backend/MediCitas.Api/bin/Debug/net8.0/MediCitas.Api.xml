@@ -1,0 +1,470 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MediCitas.Api</name>
+    </assembly>
+    <members>
+        <member name="T:MediCitas.Api.BackgroundJobs.RecordatoriosWorker">
+            <summary>
+            Servicio en segundo plano que despacha los recordatorios y avisos programados.
+            Es la pieza que hace automáticos los recordatorios sin depender de que alguien
+            abra el panel. Se ejecuta dentro de la misma aplicación, sin colas externas.
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.ApiResponse`1">
+            <summary>Envoltura estándar de todas las respuestas de la API.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.PagedResult`1">
+            <summary>Respuesta paginada para listados grandes.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.NoEncontradoException">
+            <summary>El recurso solicitado no existe. Se traduce a HTTP 404.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.ReglaNegocioException">
+            <summary>Una regla de negocio impide completar la operación. Se traduce a HTTP 409.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.ValidacionException">
+            <summary>Datos de entrada inválidos. Se traduce a HTTP 400.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Common.ChatbotSettings.ModoSimulacion">
+            <summary>Si es true los mensajes no salen a WhatsApp: se registran en la bitácora del chatbot.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.ManejadorErroresMiddleware">
+            <summary>
+            Middleware único de manejo de errores. Convierte las excepciones del dominio
+            en respuestas HTTP consistentes y evita exponer detalles internos al cliente.
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.PasswordHasher">
+            <summary>
+            Hash de contraseñas con PBKDF2-SHA256 (incluido en .NET, sin dependencias externas).
+            Formato almacenado: iteraciones.saltBase64.hashBase64
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Common.IUsuarioActual">
+            <summary>Acceso tipado a los claims del usuario autenticado.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.AgendaController">
+            <summary>Configuración de la agenda: horarios laborales, bloqueos y cupos disponibles.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.ListarHorarios(System.Nullable{System.Int32})">
+            <summary>Lista los horarios laborales configurados.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.CrearHorario(MediCitas.Api.DTOs.Catalogos.HorarioRequest)">
+            <summary>Agrega una franja horaria a un médico.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.ActualizarHorario(System.Int32,MediCitas.Api.DTOs.Catalogos.HorarioRequest)">
+            <summary>Modifica una franja horaria.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.EliminarHorario(System.Int32)">
+            <summary>Elimina una franja horaria.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.ListarBloqueos(System.Nullable{System.Int32})">
+            <summary>Lista los bloqueos vigentes: vacaciones, feriados y bloqueos puntuales.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.CrearBloqueo(MediCitas.Api.DTOs.Catalogos.BloqueoRequest)">
+            <summary>Bloquea un rango de fechas. Sin medicoId el bloqueo aplica a toda la clínica.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.EliminarBloqueo(System.Int32)">
+            <summary>Libera un bloqueo.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.Disponibilidad(System.Int32,System.DateOnly,System.Nullable{System.Int32})">
+            <summary>Cupos libres de un médico en una fecha.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.DisponibilidadRango(System.Int32,System.DateOnly,System.DateOnly)">
+            <summary>Cupos libres de un médico en un rango de hasta 60 días.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AgendaController.ProximasFechas(System.Int32,System.Int32)">
+            <summary>Próximas fechas con cupo de un médico.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.AuthController">
+            <summary>Autenticación de usuarios y registro público de pacientes.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AuthController.Login(MediCitas.Api.DTOs.Auth.LoginRequest)">
+            <summary>Inicia sesión y devuelve el token JWT.</summary>
+            <response code="200">Credenciales válidas</response>
+            <response code="400">Correo o contraseña incorrectos</response>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AuthController.Registro(MediCitas.Api.DTOs.Auth.RegistroPacienteRequest)">
+            <summary>Registra un paciente nuevo y crea su cuenta de acceso al portal.</summary>
+            <response code="201">Cuenta creada</response>
+            <response code="409">El correo ya está registrado</response>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AuthController.Perfil">
+            <summary>Devuelve el perfil del usuario autenticado.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.AuthController.CambiarPassword(MediCitas.Api.DTOs.Auth.CambiarPasswordRequest)">
+            <summary>Cambia la contraseña del usuario autenticado.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.BaseApiController">
+            <summary>Controlador base: unifica la ruta, el formato de respuesta y el acceso al usuario autenticado.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.ChatbotController">
+            <summary>
+            Punto de entrada del chatbot de WhatsApp y consola de conversaciones del panel.
+            El endpoint /mensaje es el mismo que usa el webhook y el simulador del panel,
+            de modo que la lógica del flujo es una sola.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ChatbotController.Mensaje(MediCitas.Api.DTOs.Chatbot.MensajeEntranteDto)">
+            <summary>Procesa un mensaje entrante y devuelve la respuesta del flujo.</summary>
+            <response code="200">Respuesta generada</response>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ChatbotController.VerificarWebhook(System.String,System.String,System.String)">
+            <summary>Verificación del webhook exigida por WhatsApp Business API.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ChatbotController.Conversaciones">
+            <summary>Lista las conversaciones registradas.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ChatbotController.Mensajes(System.Int32)">
+            <summary>Historial de mensajes de una conversación.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ChatbotController.Reiniciar(System.String)">
+            <summary>Devuelve la conversación al menú principal.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.CitasController">
+            <summary>Gestión completa de citas médicas.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.Listar(System.Nullable{System.DateOnly},System.Nullable{System.DateOnly},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Lista las citas del rango indicado. Un paciente autenticado solo obtiene las suyas.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.Obtener(System.Int32)">
+            <summary>Obtiene el detalle de una cita.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.Crear(MediCitas.Api.DTOs.Citas.CrearCitaRequest)">
+            <summary>
+            Agenda una cita. Valida que el cupo exista, esté libre y respete los bloqueos de agenda.
+            </summary>
+            <response code="201">Cita agendada</response>
+            <response code="409">El horario no está disponible</response>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.Reprogramar(System.Int32,MediCitas.Api.DTOs.Citas.ReprogramarCitaRequest)">
+            <summary>Reprograma una cita: cierra la actual y crea una nueva conservando el historial.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.Cancelar(System.Int32,MediCitas.Api.DTOs.Citas.CancelarCitaRequest)">
+            <summary>Cancela una cita y libera automáticamente el horario.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.Confirmar(System.Int32)">
+            <summary>Confirma la asistencia del paciente.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.CitasController.CambiarEstado(System.Int32,MediCitas.Api.DTOs.Citas.CambiarEstadoRequest)">
+            <summary>Cambia el estado de la cita: en atención, completada, no asistió, cancelada.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.ConfiguracionController">
+            <summary>Parámetros del sistema e historial de actividad.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ConfiguracionController.Listar">
+            <summary>Lista los parámetros configurables del sistema.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ConfiguracionController.Actualizar(System.String,MediCitas.Api.DTOs.Catalogos.ConfiguracionDto)">
+            <summary>Actualiza un parámetro por su clave.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.ConfiguracionController.Bitacora(System.Int32)">
+            <summary>Historial de actividad reciente del sistema.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.DashboardController">
+            <summary>Indicadores del panel administrativo y reportes.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.DashboardController.Resumen(System.Nullable{System.DateOnly})">
+            <summary>Resumen operativo del día: citas, estados, ocupación y próximos cupos.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.DashboardController.Reporte(System.DateOnly,System.DateOnly)">
+            <summary>Reporte del periodo con ausentismo, canal de origen y distribución de citas.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.EspecialidadesController">
+            <summary>Catálogo de especialidades médicas.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.EspecialidadesController.Listar(System.Boolean)">
+            <summary>Lista las especialidades. Con soloActivas=true devuelve únicamente las habilitadas.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.EspecialidadesController.Obtener(System.Int32)">
+            <summary>Obtiene una especialidad por su identificador.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.EspecialidadesController.Crear(MediCitas.Api.DTOs.Catalogos.EspecialidadRequest)">
+            <summary>Crea una especialidad.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.EspecialidadesController.Actualizar(System.Int32,MediCitas.Api.DTOs.Catalogos.EspecialidadRequest)">
+            <summary>Actualiza una especialidad.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.EspecialidadesController.Eliminar(System.Int32)">
+            <summary>Elimina una especialidad sin médicos asociados.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.MedicosController">
+            <summary>Médicos de la clínica y su agenda diaria.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.MedicosController.Listar(System.Nullable{System.Int32},System.Boolean)">
+            <summary>Lista los médicos, con filtro opcional por especialidad.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.MedicosController.Obtener(System.Int32)">
+            <summary>Obtiene la información básica de un médico.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.MedicosController.Agenda(System.Int32,System.Nullable{System.DateOnly})">
+            <summary>Agenda del día de un médico: pacientes citados en orden de atención.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.MedicosController.Crear(MediCitas.Api.DTOs.Catalogos.MedicoRequest)">
+            <summary>Registra un médico.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.MedicosController.Actualizar(System.Int32,MediCitas.Api.DTOs.Catalogos.MedicoRequest)">
+            <summary>Actualiza los datos de un médico.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.MedicosController.Eliminar(System.Int32)">
+            <summary>Elimina un médico que no tenga citas registradas.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.NotificacionesController">
+            <summary>Recordatorios y avisos enviados a los pacientes.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.NotificacionesController.Listar(System.Nullable{System.Int32},System.Nullable{MediCitas.Api.Domain.Enums.EstadoNotificacion})">
+            <summary>Lista las notificaciones. Un paciente solo ve las suyas.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.NotificacionesController.Procesar">
+            <summary>Fuerza el envío inmediato de las notificaciones pendientes.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.PacientesController">
+            <summary>Expediente administrativo de pacientes.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.Listar(System.String,System.Nullable{System.Int32})">
+            <summary>Lista los pacientes. El parámetro busqueda filtra por nombre, apellido o teléfono.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.Obtener(System.Int32)">
+            <summary>Obtiene un paciente. El paciente autenticado solo puede consultar su propio expediente.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.Historial(System.Int32)">
+            <summary>Historial completo de citas de un paciente.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.PorTelefono(System.String)">
+            <summary>Busca un paciente por su número de WhatsApp.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.Crear(MediCitas.Api.DTOs.Catalogos.PacienteRequest)">
+            <summary>Registra un paciente.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.Actualizar(System.Int32,MediCitas.Api.DTOs.Catalogos.PacienteRequest)">
+            <summary>Actualiza los datos de un paciente.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.Eliminar(System.Int32)">
+            <summary>Elimina un paciente sin citas registradas.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.PacientesController.ValidarAcceso(System.Int32)">
+            <summary>Un paciente solo puede acceder a su propio expediente.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.RetrasosController">
+            <summary>Aviso de atrasos en la atención médica.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.RetrasosController.Listar(System.Nullable{System.DateOnly},System.Nullable{System.Int32})">
+            <summary>Lista los retrasos reportados.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.RetrasosController.Reportar(MediCitas.Api.DTOs.Citas.ReportarRetrasoRequest)">
+            <summary>
+            Reporta un retraso y notifica automáticamente a los pacientes que siguen en cola,
+            ofreciéndoles esperar o reprogramar.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.RetrasosController.Responder(MediCitas.Api.DTOs.Citas.RespuestaRetrasoRequest)">
+            <summary>Registra la decisión del paciente ante un retraso: 1 esperar, 2 reprogramar.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.RetrasosController.Desactivar(System.Int32)">
+            <summary>Marca un retraso como resuelto.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Controllers.UsuariosController">
+            <summary>Administración de las cuentas de acceso al sistema.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.UsuariosController.ListarRoles">
+            <summary>Lista los roles disponibles para asignar en el panel.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.UsuariosController.Listar">
+            <summary>Lista todos los usuarios.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.UsuariosController.Obtener(System.Int32)">
+            <summary>Obtiene un usuario por su identificador.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.UsuariosController.Crear(MediCitas.Api.DTOs.Auth.CrearUsuarioRequest)">
+            <summary>Crea un usuario interno (administrador o recepcionista).</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.UsuariosController.Actualizar(System.Int32,MediCitas.Api.DTOs.Auth.ActualizarUsuarioRequest)">
+            <summary>Actualiza los datos y el rol de un usuario.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Controllers.UsuariosController.Desactivar(System.Int32)">
+            <summary>Desactiva un usuario sin borrar su historial.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Data.DbInicializador">
+            <summary>
+            Crea el esquema si no existe e inserta únicamente los datos indispensables:
+            catálogos de roles y estados, parámetros del sistema y el usuario administrador.
+            No genera información de demostración.
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Data.MediCitasDbContext">
+            <summary>
+            Contexto de Entity Framework Core. La configuración se declara con Fluent API
+            para que el modelo generado coincida exactamente con los scripts SQL del proyecto.
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Data.Repositories.ICitaRepositorio">
+            <summary>Consultas propias de la agenda que no cubre el repositorio genérico.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Data.Repositories.IRepositorio`1">
+            <summary>
+            Repositorio genérico. Encapsula el acceso a datos para que la capa de
+            servicios trabaje contra una abstracción y no directamente contra EF Core.
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Domain.Entities.BloqueoAgenda">
+            <summary>Rango de fechas en el que no se puede agendar. Si MedicoId es null aplica a toda la clínica.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.BloqueoAgenda.HoraInicio">
+            <summary>Si es null el bloqueo cubre el día completo.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.Cita.Codigo">
+            <summary>Código corto que el paciente usa en WhatsApp, por ejemplo MC-000123.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.Cita.CitaOriginalId">
+            <summary>Cita de la que proviene cuando se trata de una reprogramación.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Domain.Entities.ConversacionChatbot">
+            <summary>Estado actual del flujo conversacional de un número de WhatsApp.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.ConversacionChatbot.Contexto">
+            <summary>Datos temporales del flujo serializados en JSON.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Domain.Entities.HorarioMedico">
+            <summary>Horario laboral recurrente de un médico para un día de la semana.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.HorarioMedico.DiaSemana">
+            <summary>0 = domingo ... 6 = sábado (equivale a System.DayOfWeek).</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.Medico.DuracionCitaMinutos">
+            <summary>Tamaño del bloque de agenda en minutos.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.Paciente.Telefono">
+            <summary>Número de WhatsApp. Es la llave natural que usa el chatbot.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Domain.Entities.RetrasoMedico">
+            <summary>Retraso reportado para la agenda de un médico en una fecha específica.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.Usuario.PacienteId">
+            <summary>Vincula la cuenta con un paciente para el portal del paciente.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Domain.Entities.Usuario.MedicoId">
+            <summary>Vincula la cuenta con un médico para mostrar "Mi agenda" en el panel.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Domain.Enums.EstadoCitaEnum">
+            <summary>Estados posibles de una cita. Coinciden con la tabla EstadosCita.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Domain.Enums.Roles">
+            <summary>Nombres de rol usados en los atributos [Authorize(Roles = ...)].</summary>
+        </member>
+        <member name="F:MediCitas.Api.Domain.Enums.Roles.Personal">
+            Panel completo (admin + recepcionista)
+        </member>
+        <member name="F:MediCitas.Api.Domain.Enums.Roles.PersonalYMedico">
+            Panel + médico (sus propias citas/pacientes)
+        </member>
+        <member name="T:MediCitas.Api.DTOs.Auth.RegistroPacienteRequest">
+            <summary>Autorregistro del paciente desde la pantalla pública.</summary>
+        </member>
+        <member name="T:MediCitas.Api.DTOs.Auth.CrearUsuarioRequest">
+            <summary>Creación de usuarios internos. Solo disponible para el administrador.</summary>
+        </member>
+        <member name="P:MediCitas.Api.DTOs.Catalogos.BloqueoRequest.MedicoId">
+            <summary>Null significa que el bloqueo aplica a toda la clínica.</summary>
+        </member>
+        <member name="T:MediCitas.Api.DTOs.Chatbot.MensajeEntranteDto">
+            <summary>Mensaje entrante normalizado, independiente del proveedor de WhatsApp.</summary>
+        </member>
+        <member name="T:MediCitas.Api.DTOs.Citas.SlotDto">
+            <summary>Bloque de agenda disponible calculado a partir del horario del médico.</summary>
+        </member>
+        <member name="T:MediCitas.Api.DTOs.Citas.RespuestaRetrasoRequest">
+            <summary>Decisión del paciente ante un retraso: 1 esperar, 2 reprogramar.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.AgendaService">
+            <summary>Configuración de la agenda: horarios laborales y bloqueos de fechas.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.ContextoChatbot">
+            <summary>Datos temporales que el chatbot guarda entre mensajes.</summary>
+        </member>
+        <member name="P:MediCitas.Api.Services.Implementations.ContextoChatbot.Opciones">
+            <summary>Identificadores que corresponden a las opciones numeradas del último mensaje.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.ChatbotService">
+            <summary>
+            Chatbot de WhatsApp implementado como máquina de estados con flujos
+            predefinidos. No usa modelos de lenguaje: cada estado interpreta la
+            respuesta del paciente y decide el siguiente paso, tal como delimita
+            el ámbito teórico de la tesis.
+            </summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.DashboardService">
+            <summary>Indicadores del panel administrativo y reportes del periodo.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.DashboardService.CalcularOcupacionAsync(System.DateOnly,System.Collections.Generic.List{MediCitas.Api.Domain.Entities.Cita})">
+            <summary>Ocupación = citas vigentes del día entre la capacidad total de la agenda.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.DisponibilidadService">
+            <summary>
+            Calcula los bloques de agenda disponibles de un médico.
+            Los cupos no se almacenan: se generan a partir del horario laboral y se
+            descuentan las citas vigentes y los bloqueos. Así nunca quedan desfasados.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.DisponibilidadService.ValidarSlotAsync(MediCitas.Api.Domain.Entities.Medico,System.DateTime,System.DateTime,System.Nullable{System.Int32})">
+            <summary>Valida que el horario solicitado sea un cupo real y esté libre.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.Mapeos">
+            <summary>Conversiones entidad → DTO reutilizadas por varios servicios.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.Mapeos.FechaLarga(System.DateTime)">
+            <summary>Formato de fecha y hora usado en los mensajes de WhatsApp.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.NotificacionService">
+            <summary>
+            Programa y despacha los mensajes hacia el paciente. Cada mensaje queda
+            registrado en la tabla Notificaciones antes de intentar enviarse, de manera
+            que el envío puede reintentarse y el panel puede auditarlo.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.NotificacionService.ProgramarRecordatoriosAsync(MediCitas.Api.Domain.Entities.Cita)">
+            <summary>Crea los recordatorios automáticos de una cita según la configuración.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.NotificacionService.CancelarPendientesAsync(System.Int32)">
+            <summary>Anula los recordatorios que aún no se han enviado de una cita.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.NotificacionService.ProcesarPendientesAsync(System.Threading.CancellationToken)">
+            <summary>Envía las notificaciones cuya hora programada ya llegó. Lo invoca el worker en segundo plano.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.RetrasoService">
+            <summary>
+            Aviso de atrasos. Al reportar un retraso se notifica a los pacientes que
+            todavía están en cola ese día y se les ofrece esperar o reprogramar,
+            que es el flujo descrito en el documento funcional del proyecto.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.RetrasoService.ResponderAsync(MediCitas.Api.DTOs.Citas.RespuestaRetrasoRequest,System.Nullable{System.Int32})">
+            <summary>Registra la decisión del paciente: 1 espera, 2 reprograma.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.RetrasoService.PrepararDecisionAsync(MediCitas.Api.Domain.Entities.Cita)">
+            <summary>Coloca la conversación de WhatsApp en el estado que espera la decisión del paciente.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.ConfiguracionService">
+            <summary>Parámetros del sistema almacenados como clave/valor.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.BitacoraService">
+            <summary>Registro básico de eventos para auditoría y para la vista Historial de actividad.</summary>
+        </member>
+        <member name="T:MediCitas.Api.Services.Implementations.WhatsAppService">
+            <summary>
+            Salida de mensajes hacia WhatsApp.
+            En modo simulación (valor por defecto del prototipo) el mensaje se guarda en
+            la conversación del paciente y se escribe en el log, sin costo ni credenciales.
+            Al activar la API oficial basta con configurar ApiUrl, PhoneNumberId y AccessToken.
+            </summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Implementations.WhatsAppService.RegistrarSalidaAsync(System.String,System.String)">
+            <summary>Deja el mensaje saliente en la bitácora de la conversación del paciente.</summary>
+        </member>
+        <member name="M:MediCitas.Api.Services.Interfaces.IWhatsAppService.EnviarAsync(System.String,System.String)">
+            <summary>Envía el mensaje al paciente. En modo simulación solo lo registra.</summary>
+        </member>
+    </members>
+</doc>

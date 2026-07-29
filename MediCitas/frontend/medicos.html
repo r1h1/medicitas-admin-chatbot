@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Médicos · MediCitas</title>
+    <link rel="icon" href="assets/img/favicon-32.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="assets/css/medicitas.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="mc-contenido">
+
+    <div class="mc-card mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label" for="f-especialidad">Especialidad</label>
+                <select class="form-select" id="f-especialidad"><option value="">Todas</option></select>
+            </div>
+            <div class="col-md-3"><button class="btn btn-mc-secundario w-100" id="btn-filtrar">Filtrar</button></div>
+            <div class="col-md-4"><button class="btn btn-mc-primary w-100" id="btn-nuevo"><i class="bi bi-plus-lg"></i> Registrar médico</button></div>
+        </div>
+    </div>
+
+    <div class="mc-card">
+        <div class="table-responsive">
+            <table class="mc-tabla">
+                <thead>
+                <tr><th>Médico</th><th>Colegiado</th><th>Especialidad</th><th>Duración cita</th><th>Contacto</th><th>Estado</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="tabla-medicos"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-medico" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modal-medico-titulo">Registrar médico</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="m-nombres">Nombres</label><input class="form-control" id="m-nombres"></div>
+              <div class="col-md-6"><label class="form-label" for="m-apellidos">Apellidos</label><input class="form-control" id="m-apellidos"></div>
+              <div class="col-md-6"><label class="form-label" for="m-colegiado">Número de colegiado</label><input class="form-control" id="m-colegiado"></div>
+              <div class="col-md-6">
+                <label class="form-label" for="m-especialidad">Especialidad</label>
+                <select class="form-select" id="m-especialidad"></select>
+              </div>
+              <div class="col-md-4"><label class="form-label" for="m-duracion">Duración de cita (min)</label><input type="number" class="form-control" id="m-duracion" value="30" min="10" max="120" step="5"></div>
+              <div class="col-md-4"><label class="form-label" for="m-telefono">Teléfono</label><input class="form-control" id="m-telefono"></div>
+              <div class="col-md-4"><label class="form-label" for="m-email">Correo</label><input type="email" class="form-control" id="m-email"></div>
+              <div class="col-12 form-check ms-2">
+                <input class="form-check-input" type="checkbox" id="m-activo" checked>
+                <label class="form-check-label" for="m-activo">Disponible para agendar</label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-mc-secundario" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-mc-primary" id="btn-guardar-medico">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</div>
+
+<div id="mc-toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/pages/medicos.js"></script>
+</body>
+</html>

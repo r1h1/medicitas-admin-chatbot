@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard · MediCitas</title>
+    <link rel="icon" href="assets/img/favicon-32.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="assets/css/medicitas.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="mc-contenido">
+
+    <!-- Indicadores principales -->
+    <div class="row g-3 mb-3" id="kpis">
+        <div class="col-6 col-lg">
+            <div class="mc-card mc-kpi">
+                <div class="mc-kpi-icono mc-icono-azul"><i class="bi bi-calendar2-week"></i></div>
+                <div>
+                    <p class="mc-kpi-label">Citas de hoy</p>
+                    <div class="mc-kpi-valor" id="kpi-hoy">—</div>
+                    <a href="citas.html" class="mc-kpi-pie">Ver detalle <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mc-card mc-kpi">
+                <div class="mc-kpi-icono mc-icono-verde"><i class="bi bi-check2-square"></i></div>
+                <div>
+                    <p class="mc-kpi-label">Confirmadas</p>
+                    <div class="mc-kpi-valor" id="kpi-confirmadas">—</div>
+                    <p class="mc-kpi-pie" id="kpi-confirmadas-pct">—</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mc-card mc-kpi">
+                <div class="mc-kpi-icono mc-icono-ambar"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <p class="mc-kpi-label">Pendientes</p>
+                    <div class="mc-kpi-valor" id="kpi-pendientes">—</div>
+                    <p class="mc-kpi-pie" id="kpi-pendientes-pct">—</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mc-card mc-kpi">
+                <div class="mc-kpi-icono mc-icono-rojo"><i class="bi bi-slash-circle"></i></div>
+                <div>
+                    <p class="mc-kpi-label">Canceladas</p>
+                    <div class="mc-kpi-valor" id="kpi-canceladas">—</div>
+                    <p class="mc-kpi-pie" id="kpi-canceladas-pct">—</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mc-card mc-kpi">
+                <div class="mc-kpi-icono mc-icono-morado"><i class="bi bi-people"></i></div>
+                <div>
+                    <p class="mc-kpi-label">Pacientes registrados</p>
+                    <div class="mc-kpi-valor" id="kpi-pacientes">—</div>
+                    <p class="mc-kpi-pie">Total acumulado</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="mc-card h-100">
+                <div class="mc-card-title">Citas por estado (este mes)</div>
+                <canvas id="grafica-estados" height="200"></canvas>
+                <div id="leyenda-estados" class="mt-3 d-grid gap-2"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="mc-card h-100">
+                <div class="mc-card-title">Citas por especialidad (este mes)</div>
+                <canvas id="grafica-especialidades" height="240"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="mc-card h-100 text-center">
+                <div class="mc-card-title text-start">Ocupación de agenda (hoy)</div>
+                <canvas id="grafica-ocupacion" height="170"></canvas>
+                <div class="mc-kpi-valor mt-2" id="ocupacion-valor">—</div>
+                <p class="mc-texto-muted">Porcentaje de ocupación</p>
+                <a href="citas.html" class="mc-kpi-pie">Ver agenda completa <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Próximas citas y cupos -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-7">
+            <div class="mc-card h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="mc-card-title mb-0">Próximas citas de hoy</div>
+                    <a href="citas.html" class="mc-kpi-pie">Ver todas <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="table-responsive">
+                    <table class="mc-tabla">
+                        <thead>
+                        <tr><th>Hora</th><th>Paciente</th><th>Médico</th><th>Especialidad</th><th>Estado</th></tr>
+                        </thead>
+                        <tbody id="tabla-proximas"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="mc-card h-100">
+                <div class="mc-card-title">Próximos horarios disponibles</div>
+                <div id="lista-cupos" class="d-grid gap-2"></div>
+                <hr class="my-3">
+                <div class="mc-card-title">Resumen del día</div>
+                <div id="resumen-dia" class="d-grid gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="row g-3">
+        <div class="col-6 col-lg-3">
+            <a class="mc-acceso" href="citas.html?nueva=1">
+                <div class="mc-kpi-icono mc-icono-azul" style="width:44px;height:44px"><i class="bi bi-calendar-plus"></i></div>
+                <div><strong>Nueva cita</strong><span>Agendar una cita</span></div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a class="mc-acceso" href="pacientes.html?nuevo=1">
+                <div class="mc-kpi-icono mc-icono-morado" style="width:44px;height:44px"><i class="bi bi-person-plus"></i></div>
+                <div><strong>Registrar paciente</strong><span>Agregar un paciente</span></div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a class="mc-acceso" href="medicos.html">
+                <div class="mc-kpi-icono mc-icono-verde" style="width:44px;height:44px"><i class="bi bi-person-badge"></i></div>
+                <div><strong>Gestionar médicos</strong><span>Administrar médicos</span></div>
+            </a>
+        </div>
+        <div class="col-6 col-lg-3">
+            <a class="mc-acceso" href="chatbot.html">
+                <div class="mc-kpi-icono mc-icono-verde-wa" style="width:44px;height:44px"><i class="bi bi-whatsapp"></i></div>
+                <div><strong>Chatbot</strong><span>Conversaciones y pruebas</span></div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="mc-toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/pages/dashboard.js"></script>
+</body>
+</html>
